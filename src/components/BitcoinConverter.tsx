@@ -162,9 +162,15 @@ const BitcoinConverter = () => {
                 </div>
                 
                 <div className="border-t border-border pt-2">
-                  <p className="text-orange-500 text-base font-bold font-mono">
+                  <p className="text-orange-500 text-lg font-bold font-mono">
                     {rate.satoshisPerUnit > 0 
-                      ? `${formatNumber(rate.satoshisPerUnit)} Sats per ${rate.symbol}`
+                      ? (
+                          <>
+                            <span className="text-xl font-extrabold">{formatNumber(rate.satoshisPerUnit)}</span>
+                            {' Sats per '}
+                            {rate.symbol}
+                          </>
+                        )
                       : 'Loading...'
                     }
                   </p>
