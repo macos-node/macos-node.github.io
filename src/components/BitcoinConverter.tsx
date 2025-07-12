@@ -28,7 +28,9 @@ const BitcoinConverter = () => {
     { symbol: 'CAD', name: 'Canadian Dollar', flag: '🇨🇦' },
     { symbol: 'AUD', name: 'Australian Dollar', flag: '🇦🇺' },
     { symbol: 'CHF', name: 'Swiss Franc', flag: '🇨🇭' },
-    { symbol: 'CNY', name: 'Chinese Yuan', flag: '🇨🇳' }
+    { symbol: 'CNY', name: 'Chinese Yuan', flag: '🇨🇳' },
+    { symbol: 'VND', name: 'Vietnamese Dong', flag: '🇻🇳' },
+    { symbol: 'MXN', name: 'Mexican Peso', flag: '🇲🇽' }
   ];
 
   const fetchBitcoinRates = async () => {
@@ -38,7 +40,7 @@ const BitcoinConverter = () => {
       
       // Using CoinGecko API (free, no API key required)
       const response = await axios.get(
-        'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd,eur,gbp,jpy,cad,aud,chf,cny'
+        'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd,eur,gbp,jpy,cad,aud,chf,cny,vnd,mxn'
       );
       
       console.log('API Response:', response.data);
