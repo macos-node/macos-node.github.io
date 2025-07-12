@@ -1,7 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
-import { Bitcoin, RefreshCw, TrendingUp, DollarSign } from 'lucide-react';
+import { Bitcoin, RefreshCw, TrendingUp, DollarSign, Moon, Sun } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { useTheme } from '@/contexts/ThemeContext';
 import axios from 'axios';
 
 interface CurrencyRate {
@@ -13,6 +15,7 @@ interface CurrencyRate {
 }
 
 const BitcoinConverter = () => {
+  const { theme, toggleTheme } = useTheme();
   const [rates, setRates] = useState<CurrencyRate[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -90,69 +93,78 @@ const BitcoinConverter = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-background p-4">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-8 pt-8">
-          <div className="flex items-center justify-center mb-4">
-            <Bitcoin className="h-12 w-12 text-orange-500 mr-3" />
-            <h1 className="text-4xl font-bold text-white">Satoshi Converter</h1>
+        <div className="text-center mb-6 pt-4">
+          <div className="flex items-center justify-center mb-3">
+            <Bitcoin className="h-10 w-10 text-orange-500 mr-3" />
+            <h1 className="text-3xl font-bold text-foreground">Satoshi Converter</h1>
           </div>
-          <p className="text-slate-400 text-lg">
+          <p className="text-muted-foreground text-base">
             Real-time Bitcoin conversion rates in satoshis per currency unit
           </p>
           {lastUpdated && (
-            <p className="text-slate-500 text-sm mt-2">
+            <p className="text-muted-foreground text-sm mt-1">
               Last updated: {lastUpdated.toLocaleTimeString()}
             </p>
           )}
         </div>
 
-        {/* Refresh Button */}
-        <div className="flex justify-center mb-6">
-          <button
+        {/* Controls */}
+        <div className="flex justify-center items-center gap-4 mb-6">
+          <Button
             onClick={fetchBitcoinRates}
             disabled={loading}
-            className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 disabled:bg-orange-800 text-white px-4 py-2 rounded-lg transition-colors"
+            variant="default"
+            size="sm"
+            className="bg-orange-600 hover:bg-orange-700 text-white"
           >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            {loading ? 'Updating...' : 'Refresh Rates'}
-          </button>
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            {loading ? 'Updating...' : 'Refresh'}
+          </Button>
+          
+          <Button
+            onClick={toggleTheme}
+            variant="outline"
+            size="sm"
+          >
+            {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </Button>
         </div>
 
         {/* Error Display */}
         {error && (
-          <div className="bg-red-900/50 border border-red-500 text-red-200 p-4 rounded-lg mb-6 text-center">
+          <div className="bg-destructive/10 border border-destructive text-destructive p-3 rounded-lg mb-4 text-center text-sm">
             {error}
           </div>
         )}
 
-        {/* Currency Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {/* Currency Grid - More Compact */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
           {rates.map((rate) => (
-            <Card key={rate.symbol} className="bg-slate-800/50 border-slate-700 hover:border-orange-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-orange-500/10">
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center justify-between text-white">
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl">{rate.flag}</span>
-                    <span className="font-mono font-bold">{rate.symbol}</span>
+            <Card key={rate.symbol} className="bg-card border-border hover:border-orange-500/50 transition-all duration-200 hover:shadow-md">
+              <CardHeader className="pb-2 px-3 pt-3">
+                <CardTitle className="flex items-center justify-between text-foreground text-sm">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-lg">{rate.flag}</span>
+                    <span className="font-mono font-bold text-sm">{rate.symbol}</span>
                   </div>
-                  <TrendingUp className="h-4 w-4 text-green-500" />
+                  <TrendingUp className="h-3 w-3 text-green-500" />
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-2 px-3 pb-3">
                 <div>
-                  <p className="text-slate-400 text-sm">{rate.name}</p>
-                  <p className="text-white text-lg font-mono">
+                  <p className="text-muted-foreground text-xs">{rate.name}</p>
+                  <p className="text-foreground text-sm font-mono">
                     {rate.rate > 0 ? formatPrice(rate.rate, rate.symbol) : 'Loading...'}
                   </p>
                 </div>
                 
-                <div className="border-t border-slate-700 pt-3">
-                  <p className="text-slate-400 text-sm">Satoshis per 1 {rate.symbol}</p>
-                  <p className="text-orange-400 text-xl font-bold font-mono">
+                <div className="border-t border-border pt-2">
+                  <p className="text-muted-foreground text-xs">Sats per 1 {rate.symbol}</p>
+                  <p className="text-orange-500 text-base font-bold font-mono">
                     {rate.satoshisPerUnit > 0 ? formatNumber(rate.satoshisPerUnit) : 'Loading...'}
-                    <span className="text-sm text-slate-400 ml-1">sats</span>
                   </p>
                 </div>
               </CardContent>
@@ -161,14 +173,14 @@ const BitcoinConverter = () => {
         </div>
 
         {/* Info Section */}
-        <div className="mt-12 text-center">
-          <Card className="bg-slate-800/30 border-slate-700 max-w-2xl mx-auto">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-center mb-4">
-                <DollarSign className="h-6 w-6 text-orange-500 mr-2" />
-                <h3 className="text-xl font-semibold text-white">What are Satoshis?</h3>
+        <div className="mt-8 text-center">
+          <Card className="bg-card/50 border-border max-w-2xl mx-auto">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-center mb-3">
+                <DollarSign className="h-5 w-5 text-orange-500 mr-2" />
+                <h3 className="text-lg font-semibold text-foreground">What are Satoshis?</h3>
               </div>
-              <p className="text-slate-300 leading-relaxed">
+              <p className="text-muted-foreground text-sm leading-relaxed">
                 A satoshi is the smallest unit of Bitcoin, named after its creator Satoshi Nakamoto. 
                 One Bitcoin equals 100,000,000 satoshis. This converter shows how many satoshis 
                 you can get for one unit of each major currency, making it easier to understand 
@@ -179,7 +191,7 @@ const BitcoinConverter = () => {
         </div>
 
         {/* Footer */}
-        <footer className="mt-12 text-center text-slate-500 text-sm pb-8">
+        <footer className="mt-8 text-center text-muted-foreground text-xs pb-6">
           <p>Data provided by CoinGecko API • Updates every 30 seconds</p>
         </footer>
       </div>
