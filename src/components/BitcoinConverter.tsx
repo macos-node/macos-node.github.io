@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Bitcoin, RefreshCw, TrendingUp, DollarSign, Moon, Sun } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -162,13 +161,12 @@ const BitcoinConverter = () => {
                 </div>
                 
                 <div className="border-t border-border pt-2">
-                  <p className="text-orange-500 text-lg font-bold font-mono">
+                  <p className="text-orange-500 font-mono">
                     {rate.satoshisPerUnit > 0 
                       ? (
                           <>
                             <span className="text-xl font-extrabold">{formatNumber(rate.satoshisPerUnit)}</span>
-                            {' Sats per '}
-                            {rate.symbol}
+                            <span className="text-sm font-normal"> Sats per {rate.symbol}</span>
                           </>
                         )
                       : 'Loading...'
