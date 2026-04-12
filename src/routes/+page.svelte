@@ -1,10 +1,44 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { onMount } from 'svelte';
+
+	const FEATURED_USER = 'macos-node';
 
 	let username = $state('');
 	let error = $state('');
 
+	type GHUser = {
+		login: string;
+		name: string | null;
+		avatar_url: string;
+		bio: string | null;
+		location: string | null;
+		public_repos: number;
+		followers: number;
+		following: number;
+		html_url: string;
+	};
+
+	let featured = $state<GHUser | null>(null);
+	let featuredStars = $state(0);
+
 	const examples = ['torvalds', 'rich-harris', 'sindresorhus', 'gaearon'];
+
+	onMount(async () => {
+		try {
+			const [uRes, rRes] = await Promise.all([
+				fetch(`https://api.github.com/users/${FEATURED_USER}`),
+				fetch(`https://api.github.com/users/${FEATURED_USER}/repos?per_page=100`)
+			]);
+			if (uRes.ok) {
+				featured = await uRes.json();
+				if (rRes.ok) {
+					const repos: { stargazers_count: number }[] = await rRes.json();
+					featuredStars = repos.reduce((s, r) => s + r.stargazers_count, 0);
+				}
+			}
+		} catch { /* silently ignore */ }
+	});
 
 	function submit() {
 		const val = username.trim();
@@ -37,12 +71,12 @@
 			<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
 				<path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
 			</svg>
-			GitHub
+			View Source
 		</a>
 	</nav>
 
 	<!-- Hero -->
-	<section class="flex-1 flex flex-col items-center justify-center px-4 py-24 text-center">
+	<section class="flex flex-col items-center justify-center px-4 pt-20 pb-12 text-center">
 		<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium mb-8">
 			<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
 			Free · Open Source · No sign-up
@@ -98,6 +132,42 @@
 		</div>
 	</section>
 
+	<!-- Featured profile -->
+	{#if featured}
+		<section class="px-4 pb-14 max-w-2xl mx-auto w-full">
+			<p class="text-xs text-white/30 uppercase tracking-wider text-center mb-4">Site owner</p>
+			<a
+				href={`/${featured.login}`}
+				class="block rounded-2xl border border-white/8 bg-white/3 hover:border-emerald-500/30 hover:bg-white/5 transition-all p-6"
+			>
+				<div class="flex items-center gap-4 mb-5">
+					<img src={featured.avatar_url} alt={featured.login} class="w-14 h-14 rounded-xl ring-2 ring-white/10 shrink-0" />
+					<div class="min-w-0">
+						<div class="font-semibold text-base">{featured.name ?? featured.login}</div>
+						<div class="text-sm text-white/40">@{featured.login}</div>
+						{#if featured.bio}
+							<div class="text-xs text-white/40 mt-1 truncate">{featured.bio}</div>
+						{/if}
+					</div>
+					<span class="ml-auto text-xs text-emerald-400/70 border border-emerald-500/20 rounded-full px-2.5 py-1 shrink-0">View portfolio →</span>
+				</div>
+				<div class="grid grid-cols-4 gap-3 text-center">
+					{#each [
+						{ label: 'Repos', value: featured.public_repos },
+						{ label: 'Stars', value: featuredStars },
+						{ label: 'Followers', value: featured.followers },
+						{ label: 'Following', value: featured.following },
+					] as s}
+						<div class="rounded-lg bg-white/5 py-3">
+							<div class="text-base font-bold">{s.value.toLocaleString()}</div>
+							<div class="text-xs text-white/35 mt-0.5">{s.label}</div>
+						</div>
+					{/each}
+				</div>
+			</a>
+		</section>
+	{/if}
+
 	<!-- Features -->
 	<section class="grid grid-cols-1 sm:grid-cols-3 gap-4 px-6 pb-16 max-w-4xl mx-auto w-full">
 		{#each [
@@ -113,7 +183,18 @@
 		{/each}
 	</section>
 
-	<footer class="text-center text-sm text-white/25 pb-6">
-		Built with <a href="https://svelte.dev" class="hover:text-white/50 transition-colors">Svelte</a> · Powered by GitHub API
+	<footer class="text-center text-sm text-white/25 pb-6 flex flex-col items-center gap-2">
+		<a
+			href="https://github.com/macos-node/macos-node.github.io"
+			target="_blank"
+			rel="noopener"
+			class="inline-flex items-center gap-1.5 text-white/40 hover:text-white transition-colors"
+		>
+			<svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+				<path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+			</svg>
+			Open source on GitHub
+		</a>
+		<span>Built with <a href="https://svelte.dev" class="hover:text-white/50 transition-colors">Svelte</a> · Powered by GitHub API</span>
 	</footer>
 </main>
