@@ -1,22 +1,22 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
+	import { isNpub, lookupGitHubFromNpub } from '$lib/nostr';
 
 	const FEATURED_USER = 'macos-node';
 
-	let username = $state('');
+	let input = $state('');
 	let error = $state('');
+	let nostrState = $state<'idle' | 'looking' | 'no-github'>('idle');
+	let nostrProfile = $state<{ name?: string; picture?: string; about?: string; nip05?: string } | null>(null);
+	let nostrReason = $state('');
+
+	const inputIsNpub = $derived(isNpub(input));
 
 	type GHUser = {
-		login: string;
-		name: string | null;
-		avatar_url: string;
-		bio: string | null;
-		location: string | null;
-		public_repos: number;
-		followers: number;
-		following: number;
-		html_url: string;
+		login: string; name: string | null; avatar_url: string;
+		bio: string | null; location: string | null;
+		public_repos: number; followers: number; following: number;
 	};
 
 	let featured = $state<GHUser | null>(null);
@@ -40,11 +40,27 @@
 		} catch { /* silently ignore */ }
 	});
 
-	function submit() {
-		const val = username.trim();
-		if (!val) { error = 'Enter a GitHub username'; return; }
+	async function submit() {
+		const val = input.trim();
+		if (!val) { error = 'Enter a GitHub username or Nostr npub'; return; }
 		error = '';
-		goto(`/${val}`);
+
+		if (isNpub(val)) {
+			nostrState = 'looking';
+			nostrProfile = null;
+			nostrReason = '';
+			const result = await lookupGitHubFromNpub(val);
+			if (result.found) {
+				nostrState = 'idle';
+				goto(`/${result.github}`);
+			} else {
+				nostrState = 'no-github';
+				nostrProfile = result.profile;
+				nostrReason = result.reason;
+			}
+		} else {
+			goto(`/${val}`);
+		}
 	}
 
 	function onkeydown(e: KeyboardEvent) {
@@ -89,40 +105,98 @@
 		</h1>
 
 		<p class="text-lg text-white/50 mb-12 max-w-xl">
-			Enter any GitHub username and instantly generate a beautiful, shareable developer portfolio page.
+			Enter a GitHub username or a Nostr <code class="text-emerald-400/80 font-mono text-sm">npub</code> to generate a beautiful, shareable developer portfolio.
 		</p>
 
 		<!-- Search -->
 		<div class="w-full max-w-md">
 			<div class="flex gap-2">
 				<div class="relative flex-1">
-					<svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" fill="currentColor" viewBox="0 0 24 24">
-						<path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
-					</svg>
+					<!-- Icon: Nostr (purple) when npub detected, GitHub (dim) otherwise -->
+					{#if inputIsNpub}
+						<!-- Nostr lightning bolt -->
+						<svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-400" fill="currentColor" viewBox="0 0 24 24">
+							<path d="M13 2L4.09 12.97H11L10 22l8.91-10.97H13L14 2z"/>
+						</svg>
+					{:else}
+						<!-- GitHub mark -->
+						<svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" fill="currentColor" viewBox="0 0 24 24">
+							<path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+						</svg>
+					{/if}
 					<input
 						type="text"
-						placeholder="GitHub username"
-						bind:value={username}
+						placeholder={inputIsNpub ? 'Nostr npub detected…' : 'GitHub username or npub1…'}
+						bind:value={input}
 						{onkeydown}
-						class="w-full pl-9 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/50 transition-all"
+						class="w-full pl-9 pr-4 py-3 rounded-xl bg-white/5 border text-white placeholder-white/30 focus:outline-none transition-all
+							{inputIsNpub
+								? 'border-purple-500/50 focus:border-purple-400'
+								: 'border-white/10 focus:border-emerald-500/50'}"
 					/>
 				</div>
 				<button
 					onclick={submit}
-					class="px-5 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold transition-colors shrink-0"
+					disabled={nostrState === 'looking'}
+					class="px-5 py-3 rounded-xl font-semibold transition-colors shrink-0 disabled:opacity-60
+						{inputIsNpub
+							? 'bg-purple-500 hover:bg-purple-400 text-white'
+							: 'bg-emerald-500 hover:bg-emerald-400 text-black'}"
 				>
-					Generate
+					{nostrState === 'looking' ? 'Looking…' : 'Generate'}
 				</button>
 			</div>
+
+			<!-- hint badge -->
+			{#if inputIsNpub}
+				<p class="text-xs text-purple-400/70 mt-2 text-left">
+					Nostr npub detected — will look up linked GitHub account via NIP-39
+				</p>
+			{/if}
+
 			{#if error}
 				<p class="text-red-400 text-sm mt-2 text-left">{error}</p>
+			{/if}
+
+			<!-- Nostr lookup in progress -->
+			{#if nostrState === 'looking'}
+				<div class="mt-4 flex items-center gap-3 rounded-xl border border-purple-500/20 bg-purple-500/5 px-4 py-3">
+					<div class="w-4 h-4 rounded-full border-2 border-purple-500/30 border-t-purple-400 animate-spin shrink-0"></div>
+					<span class="text-sm text-purple-300/80">Querying Nostr relays for linked GitHub account…</span>
+				</div>
+			{/if}
+
+			<!-- No GitHub linked -->
+			{#if nostrState === 'no-github'}
+				<div class="mt-4 rounded-xl border border-yellow-500/20 bg-yellow-500/5 p-4 text-left">
+					{#if nostrProfile?.picture || nostrProfile?.name}
+						<div class="flex items-center gap-3 mb-3">
+							{#if nostrProfile.picture}
+								<img src={nostrProfile.picture} alt="" class="w-10 h-10 rounded-lg shrink-0 object-cover" />
+							{/if}
+							<div>
+								{#if nostrProfile.name}<div class="text-sm font-semibold">{nostrProfile.name}</div>{/if}
+								{#if nostrProfile.nip05}<div class="text-xs text-white/40">{nostrProfile.nip05}</div>{/if}
+							</div>
+						</div>
+					{/if}
+					<p class="text-sm text-yellow-300/80">{nostrReason}</p>
+					<a
+						href="https://github.com/nostr-protocol/nostr/blob/master/nips/39.md"
+						target="_blank"
+						rel="noopener"
+						class="inline-block mt-2 text-xs text-yellow-400/60 hover:text-yellow-400 transition-colors"
+					>
+						Learn about NIP-39 identity claims →
+					</a>
+				</div>
 			{/if}
 
 			<div class="flex flex-wrap gap-2 mt-4 justify-center items-center">
 				<span class="text-white/30 text-sm">Try:</span>
 				{#each examples as ex}
 					<button
-						onclick={() => { username = ex; goto(`/${ex}`); }}
+						onclick={() => { input = ex; goto(`/${ex}`); }}
 						class="text-sm text-emerald-400/70 hover:text-emerald-400 transition-colors"
 					>
 						{ex}
@@ -172,7 +246,7 @@
 	<section class="grid grid-cols-1 sm:grid-cols-3 gap-4 px-6 pb-16 max-w-4xl mx-auto w-full">
 		{#each [
 			{ icon: '⚡', title: 'Instant', desc: 'Portfolio generated in seconds from the GitHub API' },
-			{ icon: '🎨', title: 'Beautiful', desc: 'Clean, modern design that looks great on any device' },
+			{ icon: '🔮', title: 'Nostr-native', desc: 'Enter an npub to find the linked GitHub account via NIP-39' },
 			{ icon: '🔗', title: 'Shareable', desc: 'Every portfolio has a unique URL you can share anywhere' },
 		] as f}
 			<div class="rounded-xl border border-white/8 bg-white/3 p-5">
@@ -195,6 +269,6 @@
 			</svg>
 			Open source on GitHub
 		</a>
-		<span>Built with <a href="https://svelte.dev" class="hover:text-white/50 transition-colors">Svelte</a> · Powered by GitHub API</span>
+		<span>Built with <a href="https://svelte.dev" class="hover:text-white/50 transition-colors">Svelte</a> · Powered by GitHub API &amp; Nostr</span>
 	</footer>
 </main>
