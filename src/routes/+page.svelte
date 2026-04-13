@@ -100,7 +100,7 @@
 
 		<h1 class="text-5xl sm:text-6xl md:text-7xl font-bold leading-tight mb-6 max-w-3xl">
 			Transform your
-			<span class="bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent"> GitHub </span>
+			<span class="bg-gradient-to-r from-purple-400 via-emerald-400 to-teal-300 bg-clip-text text-transparent"> Npub </span>
 			into a portfolio
 		</h1>
 
