@@ -22,7 +22,7 @@
 	let featured = $state<GHUser | null>(null);
 	let featuredStars = $state(0);
 
-	const examples = ['torvalds', 'rich-harris', 'sindresorhus', 'gaearon'];
+	const examples = ['nodestate', 'xplbzx', 'npub10k4369fjd7xlcmsnn5upjcs3gvfuslnwzj7k9mpkdz8jxwng5ersl7m6hh'];
 
 	onMount(async () => {
 		try {
@@ -93,11 +93,6 @@
 
 	<!-- Hero -->
 	<section class="flex flex-col items-center justify-center px-4 pt-20 pb-12 text-center">
-		<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium mb-8">
-			<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-			Free · Open Source · No sign-up
-		</div>
-
 		<h1 class="text-5xl sm:text-6xl md:text-7xl font-bold leading-tight mb-6 max-w-3xl">
 			Transform your
 			<span class="bg-gradient-to-r from-purple-400 via-emerald-400 to-teal-300 bg-clip-text text-transparent"> Npub </span>
@@ -196,10 +191,14 @@
 				<span class="text-white/30 text-sm">Try:</span>
 				{#each examples as ex}
 					<button
-						onclick={() => { input = ex; goto(`/${ex}`); }}
-						class="text-sm text-emerald-400/70 hover:text-emerald-400 transition-colors"
+						onclick={() => { input = ex; if (!isNpub(ex)) goto(`/${ex}`); }}
+						class="text-sm transition-colors font-mono
+							{isNpub(ex)
+								? 'text-purple-400/70 hover:text-purple-400 max-w-[14ch] truncate'
+								: 'text-emerald-400/70 hover:text-emerald-400'}"
+						title={ex}
 					>
-						{ex}
+						{isNpub(ex) ? ex.slice(0, 10) + '…' : ex}
 					</button>
 				{/each}
 			</div>
